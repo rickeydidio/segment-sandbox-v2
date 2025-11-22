@@ -1,328 +1,304 @@
-import { useState, useEffect } from 'react';
-import { ArrowRight, Send, Heart, Search, ShoppingCart } from 'lucide-react';
-
-export default function SegmentDemo() {
-  useEffect(() => {
-    // Initialize Segment Analytics with Signals SDK
-    const writeKey = '2BSHbEigalv9XgNTu0ad4W3DWX1jMRqH'; // Replace with your actual write key
-    
-    // Load Segment Signals SDK
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/@segment/analytics-signals@latest/dist/umd/analytics-signals.umd.js';
-    script.async = true;
-    script.onload = () => {
-      if (window.SignalsPlugin && window.analytics) {
-        const signalsPlugin = new window.SignalsPlugin();
-        window.analytics.register(signalsPlugin);
-        window.analytics.load(writeKey);
-        window.analytics.page();
-      }
-    };
-    document.head.appendChild(script);
-
-    // Load Analytics.js with Signals
-    const analyticsScript = document.createElement('script');
-    analyticsScript.innerHTML = `
-      !(function () {
-        var i = "analytics",
-          analytics = (window[i] = window[i] || []);
-        if (!analytics.initialize)
-          if (analytics.invoked)
-            window.console &&
-            console.error &&
-            console.error("Segment snippet included twice.");
-        else {
-          analytics.invoked = !0;
-          analytics.methods = [
-            "trackSubmit",
-            "trackClick",
-            "trackLink",
-            "trackForm",
-            "pageview",
-            "identify",
-            "reset",
-            "group",
-            "track",
-            "ready",
-            "alias",
-            "debug",
-            "page",
-            "screen",
-            "once",
-            "off",
-            "on",
-            "addSourceMiddleware",
-            "addIntegrationMiddleware",
-            "setAnonymousId",
-            "addDestinationMiddleware",
-            "register",
-          ];
-          analytics.factory = function (e) {
-            return function () {
-              if (window[i].initialized)
-                return window[i][e].apply(window[i], arguments);
-              var n = Array.prototype.slice.call(arguments);
-              if (
-                [
-                  "track",
-                  "screen",
-                  "alias",
-                  "group",
-                  "page",
-                  "identify",
-                ].indexOf(e) > -1
-              ) {
-                var c = document.querySelector("link[rel='canonical']");
-                n.push({
-                  __t: "bpc",
-                  c: (c && c.getAttribute("href")) || void 0,
-                  p: location.pathname,
-                  u: location.href,
-                  s: location.search,
-                  t: document.title,
-                  r: document.referrer,
-                });
-              }
-              n.unshift(e);
-              analytics.push(n);
-              return analytics;
-            };
-          };
-          for (var n = 0; n < analytics.methods.length; n++) {
-            var key = analytics.methods[n];
-            analytics[key] = analytics.factory(key);
-          }
-          analytics._writeKey = '${writeKey}';
-          var r = document.getElementsByTagName("script")[0];
-          analytics.load = function (key, n) {
-            var t = document.createElement("script");
-            t.type = "text/javascript";
-            t.async = !0;
-            t.setAttribute("data-global-segment-analytics-key", i);
-            t.src =
-              "https://cdn.segment.com/analytics.js/v1/" +
-              key +
-              "/analytics.min.js";
-            r.parentNode.insertBefore(t, r);
-            analytics._loadOptions = n;
-          };
-          analytics.loadWithSignals = function (key, n) {
-            var signalsScript = document.createElement("script");
-            signalsScript.type = "text/javascript";
-            signalsScript.src =
-              "https://cdn.jsdelivr.net/npm/@segment/analytics-signals@latest/dist/umd/analytics-signals.umd.js";
-            signalsScript.async = !0;
-            r.parentNode.insertBefore(signalsScript, r);
-            signalsScript.onload = function () {
-              var signalsPlugin = new window.SignalsPlugin();
-              analytics.register(signalsPlugin);
-              analytics.load(key, n)
-            };
-          };
-          analytics.loadWithSignals(analytics._writeKey)
-          analytics.page()
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Segment Auto-Instrumentation Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #0f172a, #1e293b, #0f172a);
+            min-height: 100vh;
         }
-      })();
-    `;
-    document.head.appendChild(analyticsScript);
-  }, []);
-  const [email, setEmail] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [liked, setLiked] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const [submitted, setSubmitted] = useState(false);
-
-  // Action 1: Newsletter Submit (Interaction Signal)
-  const handleNewsletterSubmit = () => {
-    if (email) {
-      setSubmitted(true);
-      setTimeout(() => {
-        setSubmitted(false);
-        setEmail('');
-      }, 2000);
-    }
-  };
-
-  // Action 2: Search Submit (Network Signal - API call)
-  const handleSearch = async () => {
-    if (searchQuery) {
-      try {
-        await fetch('/api/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: searchQuery })
-        });
-      } catch (e) {
-        // API call triggers network signal even if endpoint doesn't exist
-      }
-      setSearchQuery('');
-    }
-  };
-
-  // Action 3: Add to Cart (Interaction Signal)
-  const handleAddToCart = () => {
-    setCartCount(cartCount + 1);
-  };
-
-  // Action 4: Like Button (Interaction Signal)
-  const handleLike = () => {
-    setLiked(!liked);
-  };
-
-  // Action 5: Navigation (Navigation Signal)
-  const handleNavigation = () => {
-    window.location.hash = 'about';
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Navigation */}
-      <nav className="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-xl font-bold text-white">Segment Analytics</div>
-          <div className="flex items-center gap-6 text-sm">
-            <button className="text-slate-300 hover:text-white transition">Docs</button>
-            <button className="text-slate-300 hover:text-white transition">Pricing</button>
-            <div className="relative">
-              <ShoppingCart className="w-5 h-5 text-slate-300 cursor-pointer" />
-              {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="text-xl font-bold text-white">Segment Analytics</div>
+            <div class="flex items-center gap-6 text-sm">
+                <button class="text-slate-300 hover:text-white transition">Docs</button>
+                <button class="text-slate-300 hover:text-white transition">Pricing</button>
+                <div class="relative">
+                    <svg class="w-5 h-5 text-slate-300 cursor-pointer" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <span id="cartBadge" class="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+                </div>
             </div>
-          </div>
         </div>
-      </nav>
+    </nav>
 
-      {/* Hero Section */}
-      <div className="max-w-6xl mx-auto px-6 pt-20 pb-16">
-        <div className="space-y-8 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tight">
-            Auto-Instrumentation <span className="text-blue-400">Signals Demo</span>
-          </h1>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-            Interact with the page below to see how Segment's auto-instrumentation captures user actions
-          </p>
+    <!-- Hero Section -->
+    <div class="max-w-6xl mx-auto px-6 pt-20 pb-16">
+        <div class="space-y-8 text-center">
+            <h1 class="text-5xl md:text-6xl font-bold text-white tracking-tight">
+                Auto-Instrumentation <span class="text-blue-400">Signals Demo</span>
+            </h1>
+            <p class="text-xl text-slate-300 max-w-2xl mx-auto">
+                Interact with the page below to see how Segment's auto-instrumentation captures user actions
+            </p>
         </div>
-      </div>
-
-      {/* Action 1: Newsletter Form */}
-      <section className="max-w-6xl mx-auto px-6 py-12">
-        <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
-          <h2 className="text-2xl font-bold text-white mb-4">1. Form Submission</h2>
-          <p className="text-slate-300 mb-6">Submit the form below to trigger an interaction signal</p>
-          <div className="flex gap-3">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 px-4 py-3 bg-slate-900 border border-slate-500 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-            />
-            <button
-              onClick={handleNewsletterSubmit}
-              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition flex items-center gap-2"
-            >
-              <Send className="w-4 h-4" /> Subscribe
-            </button>
-          </div>
-          {submitted && (
-            <div className="mt-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-400">
-              ✓ Form submitted! Interaction signal captured.
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Action 2: Search */}
-      <section className="max-w-6xl mx-auto px-6 py-12">
-        <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
-          <h2 className="text-2xl font-bold text-white mb-4">2. API Search Request</h2>
-          <p className="text-slate-300 mb-6">Search triggers a network signal (HTTP request)</p>
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-500 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-              />
-            </div>
-            <button
-              onClick={handleSearch}
-              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition"
-            >
-              Search
-            </button>
-          </div>
-          <p className="text-slate-400 text-sm mt-3">Network signal emitted on submit</p>
-        </div>
-      </section>
-
-      {/* Action 3: Add to Cart Button */}
-      <section className="max-w-6xl mx-auto px-6 py-12">
-        <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
-          <h2 className="text-2xl font-bold text-white mb-4">3. Button Click (Add to Cart)</h2>
-          <p className="text-slate-300 mb-6">Click the button to trigger an interaction signal</p>
-          <button
-            onClick={handleAddToCart}
-            className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition flex items-center gap-2"
-          >
-            <ShoppingCart className="w-4 h-4" /> Add Item to Cart
-          </button>
-          <p className="text-slate-300 mt-4">Items clicked: <span className="font-bold text-blue-400">{cartCount}</span></p>
-        </div>
-      </section>
-
-      {/* Action 4: Like Button */}
-      <section className="max-w-6xl mx-auto px-6 py-12">
-        <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
-          <h2 className="text-2xl font-bold text-white mb-4">4. Engagement Click (Like)</h2>
-          <p className="text-slate-300 mb-6">Click the heart icon to trigger an interaction signal</p>
-          <button
-            onClick={handleLike}
-            className={`p-4 rounded-lg transition transform ${
-              liked
-                ? 'bg-red-500/20 scale-110'
-                : 'bg-slate-900 hover:bg-slate-800'
-            }`}
-          >
-            <Heart className={`w-8 h-8 ${liked ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />
-          </button>
-          <p className="text-slate-300 mt-4">{liked ? 'Liked!' : 'Not liked yet'}</p>
-        </div>
-      </section>
-
-      {/* Action 5: Navigation Link */}
-      <section className="max-w-6xl mx-auto px-6 py-12">
-        <div className="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
-          <h2 className="text-2xl font-bold text-white mb-4">5. Navigation Link</h2>
-          <p className="text-slate-300 mb-6">Click the link below to trigger a navigation signal</p>
-          <button
-            onClick={handleNavigation}
-            className="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition flex items-center gap-2"
-          >
-            Go to About Page <ArrowRight className="w-4 h-4" />
-          </button>
-          <p className="text-slate-400 text-sm mt-3">Navigation signal emitted on page change</p>
-        </div>
-      </section>
-
-      {/* Info Box */}
-      <section className="max-w-6xl mx-auto px-6 py-12 mb-12">
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-blue-400 mb-3">Signals Being Captured</h3>
-          <ul className="space-y-2 text-slate-300">
-            <li>✓ <strong>Interaction Signals:</strong> Form submissions, button clicks, and engagement actions</li>
-            <li>✓ <strong>Network Signals:</strong> API requests with JSON content-type</li>
-            <li>✓ <strong>Navigation Signals:</strong> URL/hash changes</li>
-            <li>✓ <strong>Instrumentation Signals:</strong> Page views and custom events</li>
-          </ul>
-        </div>
-      </section>
     </div>
-  );
-}
+
+    <!-- Action 1: Newsletter Form -->
+    <section class="max-w-6xl mx-auto px-6 py-12">
+        <div class="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
+            <h2 class="text-2xl font-bold text-white mb-4">1. Form Submission</h2>
+            <p class="text-slate-300 mb-6">Submit the form below to trigger an interaction signal</p>
+            <div class="flex gap-3">
+                <input
+                    type="email"
+                    id="emailInput"
+                    placeholder="Enter your email"
+                    class="flex-1 px-4 py-3 bg-slate-900 border border-slate-500 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
+                />
+                <button
+                    id="subscribeBtn"
+                    class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition flex items-center gap-2"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                    Subscribe
+                </button>
+            </div>
+            <div id="submitMessage" class="mt-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-400 hidden">
+                ✓ Form submitted! Interaction signal captured.
+            </div>
+        </div>
+    </section>
+
+    <!-- Action 2: Search -->
+    <section class="max-w-6xl mx-auto px-6 py-12">
+        <div class="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
+            <h2 class="text-2xl font-bold text-white mb-4">2. API Search Request</h2>
+            <p class="text-slate-300 mb-6">Search triggers a network signal (HTTP request)</p>
+            <div class="flex gap-3">
+                <div class="flex-1 relative">
+                    <svg class="absolute left-3 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search products..."
+                        class="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-500 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
+                    />
+                </div>
+                <button
+                    id="searchBtn"
+                    class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition"
+                >
+                    Search
+                </button>
+            </div>
+            <p class="text-slate-400 text-sm mt-3">Network signal emitted on submit</p>
+        </div>
+    </section>
+
+    <!-- Action 3: Add to Cart Button -->
+    <section class="max-w-6xl mx-auto px-6 py-12">
+        <div class="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
+            <h2 class="text-2xl font-bold text-white mb-4">3. Button Click (Add to Cart)</h2>
+            <p class="text-slate-300 mb-6">Click the button to trigger an interaction signal</p>
+            <button
+                id="cartBtn"
+                class="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition flex items-center gap-2"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                Add Item to Cart
+            </button>
+            <p class="text-slate-300 mt-4">Items clicked: <span id="cartCount" class="font-bold text-blue-400">0</span></p>
+        </div>
+    </section>
+
+    <!-- Action 4: Like Button -->
+    <section class="max-w-6xl mx-auto px-6 py-12">
+        <div class="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
+            <h2 class="text-2xl font-bold text-white mb-4">4. Engagement Click (Like)</h2>
+            <p class="text-slate-300 mb-6">Click the heart icon to trigger an interaction signal</p>
+            <button
+                id="likeBtn"
+                class="p-4 rounded-lg transition transform bg-slate-900 hover:bg-slate-800"
+            >
+                <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+            </button>
+            <p class="text-slate-300 mt-4" id="likeStatus">Not liked yet</p>
+        </div>
+    </section>
+
+    <!-- Action 5: Navigation Link -->
+    <section class="max-w-6xl mx-auto px-6 py-12">
+        <div class="bg-gradient-to-br from-slate-800 to-slate-700 rounded-lg p-8 border border-slate-600">
+            <h2 class="text-2xl font-bold text-white mb-4">5. Navigation Link</h2>
+            <p class="text-slate-300 mb-6">Click the link below to trigger a navigation signal</p>
+            <button
+                id="navBtn"
+                class="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition flex items-center gap-2"
+            >
+                Go to About Page
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+            <p class="text-slate-400 text-sm mt-3">Navigation signal emitted on page change</p>
+        </div>
+    </section>
+
+    <!-- Info Box -->
+    <section class="max-w-6xl mx-auto px-6 py-12 mb-12">
+        <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6">
+            <h3 class="text-lg font-bold text-blue-400 mb-3">Signals Being Captured</h3>
+            <ul class="space-y-2 text-slate-300">
+                <li>✓ <strong>Interaction Signals:</strong> Form submissions, button clicks, and engagement actions</li>
+                <li>✓ <strong>Network Signals:</strong> API requests with JSON content-type</li>
+                <li>✓ <strong>Navigation Signals:</strong> URL/hash changes</li>
+                <li>✓ <strong>Instrumentation Signals:</strong> Page views and custom events</li>
+            </ul>
+        </div>
+    </section>
+
+    <script data-segment-write-key="2BSHbEigalv9XgNTu0ad4W3DWX1jMRqH">
+        !(function () {
+            var i = "analytics";
+            var analytics = (window[i] = window[i] || []);
+            if (!analytics.initialize) {
+                if (analytics.invoked) {
+                    window.console && console.error && console.error("Segment snippet included twice.");
+                } else {
+                    analytics.invoked = !0;
+                    analytics.methods = [
+                        "trackSubmit", "trackClick", "trackLink", "trackForm", "pageview", "identify", "reset", "group", "track", "ready", "alias", "debug", "page", "screen", "once", "off", "on", "addSourceMiddleware", "addIntegrationMiddleware", "setAnonymousId", "addDestinationMiddleware", "register"
+                    ];
+                    analytics.factory = function (e) {
+                        return function () {
+                            if (window[i].initialized) return window[i][e].apply(window[i], arguments);
+                            var n = Array.prototype.slice.call(arguments);
+                            if (["track", "screen", "alias", "group", "page", "identify"].indexOf(e) > -1) {
+                                var c = document.querySelector("link[rel='canonical']");
+                                n.push({
+                                    __t: "bpc",
+                                    c: (c && c.getAttribute("href")) || void 0,
+                                    p: location.pathname,
+                                    u: location.href,
+                                    s: location.search,
+                                    t: document.title,
+                                    r: document.referrer
+                                });
+                            }
+                            n.unshift(e);
+                            analytics.push(n);
+                            return analytics;
+                        };
+                    };
+                    for (var n = 0; n < analytics.methods.length; n++) {
+                        var key = analytics.methods[n];
+                        analytics[key] = analytics.factory(key);
+                    }
+                    analytics._writeKey = document.currentScript.getAttribute("data-segment-write-key");
+                    var r = document.getElementsByTagName("script")[0];
+                    analytics.load = function (key, n) {
+                        var t = document.createElement("script");
+                        t.type = "text/javascript";
+                        t.async = !0;
+                        t.setAttribute("data-global-segment-analytics-key", i);
+                        t.src = "https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";
+                        r.parentNode.insertBefore(t, r);
+                        analytics._loadOptions = n;
+                    };
+                    analytics.loadWithSignals = function (key, n) {
+                        var signalsScript = document.createElement("script");
+                        signalsScript.type = "text/javascript";
+                        signalsScript.src = "https://cdn.jsdelivr.net/npm/@segment/analytics-signals@latest/dist/umd/analytics-signals.umd.js";
+                        signalsScript.async = !0;
+                        r.parentNode.insertBefore(signalsScript, r);
+                        signalsScript.onload = function () {
+                            var signalsPlugin = new window.SignalsPlugin();
+                            analytics.register(signalsPlugin);
+                            analytics.load(key, n);
+                        };
+                    };
+                    analytics.loadWithSignals(analytics._writeKey);
+                    analytics.page();
+                }
+            }
+        })();
+    </script>
+
+    <script>
+
+        // State management
+        var cartCount = 0;
+        var liked = false;
+
+        // Action 1: Newsletter Submit
+        document.getElementById('subscribeBtn').addEventListener('click', function() {
+            var email = document.getElementById('emailInput').value;
+            if (email) {
+                var message = document.getElementById('submitMessage');
+                message.classList.remove('hidden');
+                document.getElementById('emailInput').value = '';
+                setTimeout(function() {
+                    message.classList.add('hidden');
+                }, 2000);
+            }
+        });
+
+        // Action 2: Search Submit
+        document.getElementById('searchBtn').addEventListener('click', function() {
+            var query = document.getElementById('searchInput').value;
+            if (query) {
+                fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query })
+                }).catch(function(e) {
+                    // Network signal triggers even if endpoint doesn't exist
+                });
+                document.getElementById('searchInput').value = '';
+            }
+        });
+
+        // Action 3: Add to Cart
+        document.getElementById('cartBtn').addEventListener('click', function() {
+            cartCount++;
+            document.getElementById('cartCount').textContent = cartCount;
+            document.getElementById('cartBadge').textContent = cartCount;
+            document.getElementById('cartBadge').classList.remove('hidden');
+        });
+
+        // Action 4: Like Button
+        document.getElementById('likeBtn').addEventListener('click', function() {
+            liked = !liked;
+            var btn = document.getElementById('likeBtn');
+            var status = document.getElementById('likeStatus');
+            var heart = btn.querySelector('svg');
+            
+            if (liked) {
+                btn.classList.remove('bg-slate-900', 'hover:bg-slate-800');
+                btn.classList.add('bg-red-500/20', 'scale-110');
+                heart.classList.remove('text-slate-400');
+                heart.classList.add('fill-red-500', 'text-red-500');
+                status.textContent = 'Liked!';
+            } else {
+                btn.classList.add('bg-slate-900', 'hover:bg-slate-800');
+                btn.classList.remove('bg-red-500/20', 'scale-110');
+                heart.classList.add('text-slate-400');
+                heart.classList.remove('fill-red-500', 'text-red-500');
+                status.textContent = 'Not liked yet';
+            }
+        });
+
+        // Action 5: Navigation
+        document.getElementById('navBtn').addEventListener('click', function() {
+            window.location.hash = 'about';
+        });
+    </script>
+</body>
+</html>
